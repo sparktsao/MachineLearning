@@ -1,6 +1,13 @@
 #coding:utf-8
 
 '''
+
+Fix issue when using Keras v0.2
+
+'''
+
+
+'''
     GPU run command:
         THEANO_FLAGS=mode=FAST_RUN,device=gpu,floatX=float32 python cnn.py
     CPU run command:
@@ -21,8 +28,6 @@ from data import load_data
 import random
 
 
-
-
 #加载数据
 data, label = load_data()
 #打乱数据
@@ -34,46 +39,50 @@ print(data.shape[0], ' samples')
 
 #label为0~9共10个类别，keras要求格式为binary class matrices,转化一下，直接调用keras提供的这个函数
 label = np_utils.to_categorical(label, 10)
+print label
 
 ###############
 #开始建立CNN模型
 ###############
 
 #生成一个model
+from keras.layers.core import Masking
 model = Sequential()
 
 #第一个卷积层，4个卷积核，每个卷积核大小5*5。1表示输入的图片的通道,灰度图为1通道。
 #border_mode可以是valid或者full，具体看这里说明：http://deeplearning.net/software/theano/library/tensor/nnet/conv.html#theano.tensor.nnet.conv.conv2d
 #激活函数用tanh
 #你还可以在model.add(Activation('tanh'))后加上dropout的技巧: model.add(Dropout(0.5))
-model.add(Convolution2D(4, 1, 5, 5, border_mode='valid')) 
+model.add(Convolution2D(4,  5, 5, border_mode='valid',input_shape=(1,28,28))) 
 model.add(Activation('tanh'))
 
 
 #第二个卷积层，8个卷积核，每个卷积核大小3*3。4表示输入的特征图个数，等于上一层的卷积核个数
 #激活函数用tanh
 #采用maxpooling，poolsize为(2,2)
-model.add(Convolution2D(8,4, 3, 3, border_mode='valid'))
+model.add(Convolution2D(8, 3, 3, border_mode='valid'))
 model.add(Activation('tanh'))
-model.add(MaxPooling2D(poolsize=(2, 2)))
+model.add(MaxPooling2D(pool_size=(2, 2)))
 
 #第三个卷积层，16个卷积核，每个卷积核大小3*3
 #激活函数用tanh
 #采用maxpooling，poolsize为(2,2)
-model.add(Convolution2D(16, 8, 3, 3, border_mode='valid')) 
+model.add(Convolution2D(16, 3, 3, border_mode='valid')) 
 model.add(Activation('tanh'))
-model.add(MaxPooling2D(poolsize=(2, 2)))
+model.add(MaxPooling2D(pool_size=(2, 2)))
 
 #全连接层，先将前一层输出的二维特征图flatten为一维的。
 #Dense就是隐藏层。16就是上一层输出的特征图个数。4是根据每个卷积层计算出来的：(28-5+1)得到24,(24-3+1)/2得到11，(11-3+1)/2得到4
 #全连接有128个神经元节点,初始化方式为normal
 model.add(Flatten())
-model.add(Dense(16*4*4, 128, init='normal'))
+#model.add(Dense(16*4*4, 128, init='normal'))
+model.add(Dense(256))
 model.add(Activation('tanh'))
 
 
 #Softmax分类，输出是10类别
-model.add(Dense(128, 10, init='normal'))
+#model.add(Dense(128, 10, init='normal'))
+model.add(Dense(10))
 model.add(Activation('softmax'))
 
 
